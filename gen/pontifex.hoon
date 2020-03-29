@@ -14,7 +14,7 @@
   (alphashift numencodemsg)
 %=  $
   tempvalcard  `@ud`(keystreamcard (findoperant (triplecut (jokerbfunc (jokerafunc (findoperant (triplecut (jokerbfunc (jokerafunc swapdeck)))))))))
-  numencodemsg  [?:(=(%encode action) (add i.tempvaltape tempvalcard) (sub i.tempvaltape (mod tempvalcard 26))) numencodemsg]
+  numencodemsg  [?:(=(%encode action) (add i.tempvaltape tempvalcard) ?:((gte tempvalcard i.tempvaltape) (sub (add 26 i.tempvaltape) ?:((gth tempvalcard 26) (mod tempvalcard 26) tempvalcard)) (sub i.tempvaltape ?:((gth tempvalcard 26) (mod tempvalcard 26) tempvalcard)))) numencodemsg]
   tempvaltape  t.tempvaltape
   swapdeck  `deckform`(findoperant (triplecut (jokerbfunc (jokerafunc swapdeck))))
 ==
@@ -34,7 +34,7 @@
 ++  valuelist  `(list value)`~[%ace %2 %3 %4 %5 %6 %7 %8 %9 %10 %jack %queen %king]
 ++  valuepoints
   =/  valuepl=(list value)  valuelist
-  =/  counter=@ud  0
+  =/  counter=@ud  1
   =|  valuemap=(map value @ud)
   |-  ^-  (map value @ud)
   ?~  valuepl
@@ -56,6 +56,7 @@
   $(deck [[i.decksuit i.deckvalue] deck], deckvalue t.deckvalue)
 ++  convert
   |=  msg=tape
+  =.  msg  (cass msg)
   ^-  (list @ud)
   %+  turn  msg
   |=  a=@t
@@ -72,15 +73,19 @@
   |=  incomingdeck1=deckform
   ^-  deckform
   =/  startera  (find [%joker %a]~ incomingdeck1)
-  =/  posita=@ud  ?~(startera !! (dec u.startera))
-  ?:  =(posita 1)
-    `deckform`(into `deckform`(oust [(add posita 2) 1] incomingdeck1) 52 `card`[%joker %a])
+  =/  posita=@ud  ?~(startera ~|("No Joker A in Deck" !!) ?:(=(0 u.startera) 100 (dec u.startera)))
+  ?:  =(posita 100)
+    `deckform`(into `deckform`(oust [0 1] incomingdeck1) 51 `card`[%joker %a])
   `deckform`(into `deckform`(oust [+(posita) 1] incomingdeck1) posita `card`[%joker %a])
 ++  jokerbfunc
   |=  incomingdeck2=deckform
   ^-  deckform
   =/  starterb  (find [%joker %b]~ incomingdeck2)
-  =/  positb=@ud  ?~(starterb !! (dec (dec u.starterb)))
+  =/  positb=@ud  ?~(starterb ~|("No Joker B in Deck" !!) ?:((lth u.starterb 2) ?:(=(0 u.starterb) 100 101) (dec (dec u.starterb))))
+  ?:  (gth positb 53)
+    ?:  =(positb 100)
+      `deckform`(into `deckform`(oust [0 1] incomingdeck2) 50 `card`[%joker %b])
+    `deckform`(into `deckform`(oust [1 1] incomingdeck2) 51 `card`[%joker %b])
   `deckform`(into `deckform`(oust [(add positb 2) 1] incomingdeck2) positb `card`[%joker %b])
 ++  triplecut
   |=  incomingdeck3=deckform
@@ -120,7 +125,7 @@
   |-
   ?~  inclist
     outlist
-  $(outlist [`@t`(add 96 (mod i.inclist 26)) outlist], inclist t.inclist)
+  $(outlist [`@t`(add 96 ?:((gth i.inclist 26) (mod i.inclist 26) i.inclist)) outlist], inclist t.inclist)
 ++  customdeckbuilder
   |=  decksettings=(list @ud)
   =/  valuefrom=(list value)  valuelist
@@ -129,13 +134,13 @@
   ?~  decksettings
     (flop outputdeck)
   ?:  &((gth i.decksettings 0) (lte i.decksettings 13))
-    $(decksettings t.decksettings, outputdeck [`card`[%club (snag (sub i.decksettings 1) valuefrom)] outputdeck])
+    $(decksettings t.decksettings, outputdeck [`card`[%club (snag i.decksettings valuefrom)] outputdeck])
   ?:  &((gte i.decksettings 14) (lte i.decksettings 26))
-    $(decksettings t.decksettings, outputdeck [`card`[%diamond (snag (sub i.decksettings 14) valuefrom)] outputdeck])
+    $(decksettings t.decksettings, outputdeck [`card`[%diamond (snag (sub i.decksettings 13) valuefrom)] outputdeck])
   ?:  &((gte i.decksettings 27) (lte i.decksettings 39))
-    $(decksettings t.decksettings, outputdeck [`card`[%heart (snag (sub i.decksettings 27) valuefrom)] outputdeck])
+    $(decksettings t.decksettings, outputdeck [`card`[%heart (snag (sub i.decksettings 26) valuefrom)] outputdeck])
   ?:  &((gte i.decksettings 40) (lte i.decksettings 52))
-    $(decksettings t.decksettings, outputdeck [`card`[%spade (snag (sub i.decksettings 40) valuefrom)] outputdeck])
+    $(decksettings t.decksettings, outputdeck [`card`[%spade (snag (sub i.decksettings 39) valuefrom)] outputdeck])
   ?:  =(53 i.decksettings)
     $(decksettings t.decksettings, outputdeck [`card`[%joker %a] outputdeck])
   ?:  =(54 i.decksettings)
